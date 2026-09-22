@@ -7,7 +7,7 @@ keepLink KP9000 / KP-9000-9XHML-X und kompatible OEM-Managed-Switches.
 
 ### Was du bekommst
 
-- Eigenes Gerät pro Port mit Link-Status, Geschwindigkeit, Duplex und TX/RX-Zählern
+- Verbindung und Geschwindigkeit pro Port, optional Duplex, Flusskontrolle und Paketzähler
 - Taste für den Neustart des Switches
 - Vollständig lokal, keine Cloud
 

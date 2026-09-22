@@ -34,7 +34,7 @@ class RebootButton(CoordinatorEntity[HoracoCoordinator], ButtonEntity):
 
     _attr_device_class = ButtonDeviceClass.RESTART
     _attr_has_entity_name = True
-    _attr_name = "Reboot"
+    _attr_translation_key = "reboot"
     _attr_icon = "mdi:restart"
 
     def __init__(self, coordinator: HoracoCoordinator) -> None:

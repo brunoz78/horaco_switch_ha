@@ -1,12 +1,9 @@
 """Sensor platform for HORACO Managed Switch.
 
 Architecture:
-  • One "parent" Device  → the physical switch  (model, firmware, uptime, MAC, ports summary)
-  • One "child" Device per port  → Port N (link, speed, duplex, TX bytes, RX bytes,
-                                            TX packets, RX packets, TX errors, RX errors)
-
-This way the UI groups everything per port instead of exposing a flat list of
-disconnected entities.
+  • One Device per switch (model, firmware, uptime, MAC, ports summary)
+  • Per-port entities live on that same device, named "Port N …"
+    (speed enabled by default; duplex, flow control and counters disabled by default)
 """
 from __future__ import annotations
 
@@ -53,16 +50,6 @@ def switch_device_info(coordinator: HoracoCoordinator) -> DeviceInfo:
     )
 
 
-def port_device_info(coordinator: HoracoCoordinator, port_num: str) -> DeviceInfo:
-    """DeviceInfo for a single port (child device, via_device → switch)."""
-    return DeviceInfo(
-        identifiers={(DOMAIN, f"{coordinator.scraper.ip}_port{port_num}")},
-        name=f"Port {port_num}",
-        manufacturer="HORACO",
-        model=f"Port {port_num}",
-        via_device=(DOMAIN, coordinator.scraper.ip),
-    )
-
 
 # ────────────────────────────────────────────────────────────────────────────
 # Switch-level sensor descriptors
@@ -76,35 +63,33 @@ class SwitchSensorDesc(SensorEntityDescription):
 SWITCH_SENSORS: tuple[SwitchSensorDesc, ...] = (
     SwitchSensorDesc(
         key="uptime",
-        name="Uptime",
+        translation_key="uptime",
         icon="mdi:timer-outline",
         value_fn=lambda d: d.uptime or None,
     ),
     SwitchSensorDesc(
         key="firmware",
-        name="Firmware",
+        translation_key="firmware",
         icon="mdi:chip",
         value_fn=lambda d: d.firmware or None,
     ),
     SwitchSensorDesc(
         key="mac_address",
-        name="MAC Address",
+        translation_key="mac_address",
         icon="mdi:identifier",
         value_fn=lambda d: d.mac or None,
     ),
     SwitchSensorDesc(
         key="ports_up",
-        name="Ports Up",
+        translation_key="ports_up",
         icon="mdi:ethernet",
-        native_unit_of_measurement="ports",
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda d: sum(1 for p in d.ports if p.status == "up"),
     ),
     SwitchSensorDesc(
         key="ports_total",
-        name="Ports Total",
+        translation_key="ports_total",
         icon="mdi:ethernet",
-        native_unit_of_measurement="ports",
         value_fn=lambda d: len(d.ports),
     ),
 )
@@ -122,19 +107,23 @@ class PortSensorDesc(SensorEntityDescription):
 PORT_SENSORS: tuple[PortSensorDesc, ...] = (
     PortSensorDesc(
         key="speed",
-        name="Speed",
+        translation_key="speed",
         icon="mdi:speedometer",
         value_fn=lambda p: p.speed or None,
     ),
     PortSensorDesc(
         key="duplex",
-        name="Duplex",
+        translation_key="duplex",
+        entity_registry_enabled_default=False,
         icon="mdi:transfer",
-        value_fn=lambda p: p.duplex or None,
+        device_class=SensorDeviceClass.ENUM,
+        options=["full", "half"],
+        value_fn=lambda p: p.duplex.lower() or None,
     ),
     PortSensorDesc(
         key="tx_bytes",
-        name="TX",
+        translation_key="tx_bytes",
+        entity_registry_enabled_default=False,
         icon="mdi:upload-network-outline",
         native_unit_of_measurement="B",
         device_class=SensorDeviceClass.DATA_SIZE,
@@ -143,7 +132,8 @@ PORT_SENSORS: tuple[PortSensorDesc, ...] = (
     ),
     PortSensorDesc(
         key="rx_bytes",
-        name="RX",
+        translation_key="rx_bytes",
+        entity_registry_enabled_default=False,
         icon="mdi:download-network-outline",
         native_unit_of_measurement="B",
         device_class=SensorDeviceClass.DATA_SIZE,
@@ -152,25 +142,28 @@ PORT_SENSORS: tuple[PortSensorDesc, ...] = (
     ),
     PortSensorDesc(
         key="tx_packets",
-        name="TX Packets",
+        translation_key="tx_packets",
+        entity_registry_enabled_default=False,
         icon="mdi:arrow-up-circle-outline",
-        native_unit_of_measurement="packets",
         state_class=SensorStateClass.TOTAL_INCREASING,
         value_fn=lambda p: p.tx_packets,
     ),
     PortSensorDesc(
         key="rx_packets",
-        name="RX Packets",
+        translation_key="rx_packets",
+        entity_registry_enabled_default=False,
         icon="mdi:arrow-down-circle-outline",
-        native_unit_of_measurement="packets",
         state_class=SensorStateClass.TOTAL_INCREASING,
         value_fn=lambda p: p.rx_packets,
     ),
     PortSensorDesc(
         key="flow_control",
-        name="Flow Control",
+        translation_key="flow_control",
+        entity_registry_enabled_default=False,
         icon="mdi:swap-horizontal",
-        value_fn=lambda p: p.flow_control or None,
+        device_class=SensorDeviceClass.ENUM,
+        options=["enabled", "disabled"],
+        value_fn=lambda p: p.flow_control.lower() or None,
     ),
 )
 
@@ -202,7 +195,7 @@ async def async_setup_entry(
             continue
         entities.append(SwitchLevelSensor(coordinator, desc))
 
-    # Port-level sensors (one child device per port)
+    # Port-level sensors (on the switch device)
     if data:
         for port in data.ports:
             for desc in PORT_SENSORS:
@@ -238,7 +231,7 @@ class SwitchLevelSensor(CoordinatorEntity[HoracoCoordinator], SensorEntity):
 
 
 class PortLevelSensor(CoordinatorEntity[HoracoCoordinator], SensorEntity):
-    """Sensor attached to a per-port child device."""
+    """Per-port sensor, attached to the switch device."""
 
     entity_description: PortSensorDesc
 
@@ -253,7 +246,8 @@ class PortLevelSensor(CoordinatorEntity[HoracoCoordinator], SensorEntity):
         self._port_num = port_num
         self._attr_unique_id = f"{DOMAIN}_{coordinator.scraper.ip}_port{port_num}_{desc.key}"
         self._attr_has_entity_name = True
-        self._attr_device_info = port_device_info(coordinator, port_num)
+        self._attr_translation_placeholders = {"port": port_num}
+        self._attr_device_info = switch_device_info(coordinator)
 
     def _port(self) -> PortData | None:
         if not self.coordinator.data:

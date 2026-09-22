@@ -26,8 +26,7 @@
 
 ## Funktionen
 
-- 🔌 **Eigenes Gerät pro Port** — jeder Port ist ein eigenes HA-Gerät mit Link-Status, Geschwindigkeit, Duplex, TX/RX-Paketen und Flow Control
-- 📊 **Verkehrszähler** — fortlaufende TX/RX-Sensoren, kompatibel mit der HA-Statistik
+- 🔌 **Port-Überwachung** — Verbindung und Geschwindigkeit pro Port, optional Duplex, Flusskontrolle und Paketzähler
 - 🔄 **Neustart-Taste** — Switch per Knopfdruck aus jedem Dashboard oder jeder Automation neu starten
 - ⚡ **Direkte Abfrage im LAN** — vollständig lokal, keine Cloud, kein Proxy
 - 🔧 **Einstellbares Abfrageintervall** — 10 bis 300 Sekunden (Standard 30 s)
@@ -66,29 +65,34 @@ Nach der Einrichtung kannst du über **Konfigurieren** auf der Integrationskarte
 
 ## Entitäten
 
-### Switch-Gerät
+Pro Switch gibt es **ein Gerät**. Alle Entitäten — auch die der einzelnen Ports — hängen direkt an diesem Gerät.
+
+### Switch
 
 | Entität | Typ | Beschreibung |
 |---------|-----|--------------|
-| Uptime | Sensor | z. B. `3d 14h 22m` — nur wenn die Firmware die Laufzeit meldet |
+| Betriebszeit | Sensor | z. B. `3d 14h 22m` — nur wenn die Firmware die Laufzeit meldet |
 | Firmware | Sensor | Firmware-Version |
-| MAC Address | Sensor | MAC-Adresse des Switches |
-| Ports Up | Sensor | Anzahl aktiver Ports |
-| Ports Total | Sensor | Anzahl physischer Ports |
-| **Reboot** | **Taste** | Sendet `POST /reboot.cgi` an den Switch |
+| MAC-Adresse | Sensor | MAC-Adresse des Switches |
+| Aktive Ports | Sensor | Anzahl verbundener Ports |
+| Ports gesamt | Sensor | Anzahl physischer Ports |
+| **Neustart** | **Taste** | Sendet `POST /reboot.cgi` an den Switch |
 
-### Gerät „Port N“ *(eines pro physischem Port)*
+### Pro Port *(N = 1 … Anzahl Ports)*
 
-| Entität | Typ | Beschreibung |
-|---------|-----|--------------|
-| Link | Binärsensor | `Ein` = verbunden · `Aus` = getrennt/deaktiviert. Enthält alle Port-Werte als Attribute. |
-| Speed | Sensor | `100M` · `1000M` · `2500M` · `10G` · `Disabled` |
-| Duplex | Sensor | `Full` oder `Half` |
-| TX | Sensor | Gesendete Bytes (fortlaufend) — nur wenn der Switch Byte-Zähler liefert |
-| RX | Sensor | Empfangene Bytes (fortlaufend) — nur wenn der Switch Byte-Zähler liefert |
-| TX Packets | Sensor | Gesendete Pakete (fortlaufend) |
-| RX Packets | Sensor | Empfangene Pakete (fortlaufend) |
-| Flow Control | Sensor | `Enabled` oder `Disabled` |
+| Entität | Typ | Standard | Beschreibung |
+|---------|-----|----------|--------------|
+| Port N Verbindung | Binärsensor | aktiv | `Ein` = verbunden · `Aus` = getrennt/deaktiviert. Enthält alle Port-Werte als Attribute. |
+| Port N Geschwindigkeit | Sensor | aktiv | `100M` · `1000M` · `2500M` · `10G` |
+| Port N Duplex | Sensor | deaktiviert | `Vollduplex` oder `Halbduplex` |
+| Port N Flusskontrolle | Sensor | deaktiviert | `Ein` oder `Aus` |
+| Port N Gesendete Pakete | Sensor | deaktiviert | Gesendete Pakete (fortlaufend) |
+| Port N Empfangene Pakete | Sensor | deaktiviert | Empfangene Pakete (fortlaufend) |
+| Port N Gesendet / Empfangen | Sensor | deaktiviert | Bytes (fortlaufend) — nur wenn der Switch Byte-Zähler liefert |
+
+Deaktivierte Entitäten lassen sich bei Bedarf unter **Einstellungen → Geräte & Dienste → Entitäten** einschalten.
+
+Die Entitäts-IDs folgen dem Muster `binary_sensor.switch_192_168_1_100_port_3_link` bzw. `sensor.switch_192_168_1_100_port_3_speed`.
 
 ---
 
@@ -100,7 +104,7 @@ Nach der Einrichtung kannst du über **Konfigurieren** auf der Integrationskarte
 alias: "Switch-Port 3 getrennt"
 triggers:
   - trigger: state
-    entity_id: binary_sensor.port_3_link
+    entity_id: binary_sensor.switch_192_168_1_100_port_3_link
     to: "off"
     for: "00:00:30"
 actions:

@@ -1,6 +1,6 @@
 """Binary sensor platform — port link state (UP/DOWN).
 
-Each port gets a connectivity binary_sensor under its own child device.
+Each port gets a connectivity binary_sensor on the switch device.
 Attributes carry all port details: speed, duplex, flow control, counters.
 """
 from __future__ import annotations
@@ -20,7 +20,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import HoracoCoordinator
 from .const import DOMAIN, PORT_STATUS_UP
 from .scraper import PortData
-from .sensor import port_device_info   # reuse the helper
+from .sensor import switch_device_info   # reuse the helper
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,13 +44,14 @@ class PortLinkBinarySensor(CoordinatorEntity[HoracoCoordinator], BinarySensorEnt
 
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
     _attr_has_entity_name = True
-    _attr_name = "Link"
+    _attr_translation_key = "link"
 
     def __init__(self, coordinator: HoracoCoordinator, port_num: str) -> None:
         super().__init__(coordinator)
         self._port_num = port_num
         self._attr_unique_id = f"{DOMAIN}_{coordinator.scraper.ip}_port{port_num}_link"
-        self._attr_device_info = port_device_info(coordinator, port_num)
+        self._attr_translation_placeholders = {"port": port_num}
+        self._attr_device_info = switch_device_info(coordinator)
 
     def _port(self) -> PortData | None:
         if not self.coordinator.data:

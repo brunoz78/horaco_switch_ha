@@ -29,5 +29,63 @@
         }
       }
     }
+  },
+  "entity": {
+    "binary_sensor": {
+      "link": {
+        "name": "Port {port} Verbindung"
+      }
+    },
+    "button": {
+      "reboot": {
+        "name": "Neustart"
+      }
+    },
+    "sensor": {
+      "uptime": {
+        "name": "Betriebszeit"
+      },
+      "firmware": {
+        "name": "Firmware"
+      },
+      "mac_address": {
+        "name": "MAC-Adresse"
+      },
+      "ports_up": {
+        "name": "Aktive Ports"
+      },
+      "ports_total": {
+        "name": "Ports gesamt"
+      },
+      "speed": {
+        "name": "Port {port} Geschwindigkeit"
+      },
+      "duplex": {
+        "name": "Port {port} Duplex",
+        "state": {
+          "full": "Vollduplex",
+          "half": "Halbduplex"
+        }
+      },
+      "tx_bytes": {
+        "name": "Port {port} Gesendet"
+      },
+      "rx_bytes": {
+        "name": "Port {port} Empfangen"
+      },
+      "tx_packets": {
+        "name": "Port {port} Gesendete Pakete"
+      },
+      "rx_packets": {
+        "name": "Port {port} Empfangene Pakete"
+      },
+      "flow_control": {
+        "name": "Port {port} Flusskontrolle",
+        "state": {
+          "enabled": "Ein",
+          "disabled": "Aus"
+        }
+      }
+    }
   }
 }

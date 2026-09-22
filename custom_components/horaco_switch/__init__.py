@@ -6,11 +6,14 @@ Based on the scraping logic from https://github.com/byte4geek/switch-dashboard
 from __future__ import annotations
 
 import logging
+import re
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -41,6 +44,53 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    return True
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate old config entries.
+
+    v1 → v2: ports are no longer child devices. Port entities move onto the
+    switch device, get IDs like binary_sensor.switch_10_0_1_4_port_1_link,
+    everything except link and speed is disabled by default, and the empty
+    port devices are removed.
+    """
+    if entry.version > 2:
+        return False
+
+    if entry.version == 1:
+        ip = entry.data[CONF_HOST]
+        slug = ip.replace(".", "_")
+        ent_reg = er.async_get(hass)
+        dev_reg = dr.async_get(hass)
+        switch_dev = dev_reg.async_get_device(identifiers={(DOMAIN, ip)})
+        pattern = re.compile(rf"^{DOMAIN}_{re.escape(ip)}_port(\d+)_(\w+)$")
+        suffix = {"tx_bytes": "tx", "rx_bytes": "rx"}
+
+        for ent in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
+            m = pattern.match(ent.unique_id)
+            if not m:
+                continue
+            port, key = m.groups()
+            changes: dict = {}
+            if switch_dev:
+                changes["device_id"] = switch_dev.id
+            new_id = f"{ent.domain}.switch_{slug}_port_{port}_{suffix.get(key, key)}"
+            # Only replace auto-generated IDs ("…port_1_link_4"), never user-chosen ones
+            if ent.entity_id.split(".", 1)[1].startswith("port_") and not ent_reg.async_get(new_id):
+                changes["new_entity_id"] = new_id
+            if key not in ("link", "speed") and ent.disabled_by is None:
+                changes["disabled_by"] = er.RegistryEntryDisabler.INTEGRATION
+            ent_reg.async_update_entity(ent.entity_id, **changes)
+
+        if switch_dev:
+            for dev in dr.async_entries_for_config_entry(dev_reg, entry.entry_id):
+                if any(d == DOMAIN and i.startswith(f"{ip}_port") for d, i in dev.identifiers):
+                    dev_reg.async_remove_device(dev.id)
+
+        hass.config_entries.async_update_entry(entry, version=2)
+        _LOGGER.info("[%s] Migrated config entry to version 2", ip)
+
     return True
 
 

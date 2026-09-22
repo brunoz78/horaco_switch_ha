@@ -29,5 +29,63 @@
         }
       }
     }
+  },
+  "entity": {
+    "binary_sensor": {
+      "link": {
+        "name": "Port {port} Link"
+      }
+    },
+    "button": {
+      "reboot": {
+        "name": "Reboot"
+      }
+    },
+    "sensor": {
+      "uptime": {
+        "name": "Uptime"
+      },
+      "firmware": {
+        "name": "Firmware"
+      },
+      "mac_address": {
+        "name": "MAC Address"
+      },
+      "ports_up": {
+        "name": "Ports Up"
+      },
+      "ports_total": {
+        "name": "Ports Total"
+      },
+      "speed": {
+        "name": "Port {port} Speed"
+      },
+      "duplex": {
+        "name": "Port {port} Duplex",
+        "state": {
+          "full": "Full",
+          "half": "Half"
+        }
+      },
+      "tx_bytes": {
+        "name": "Port {port} TX"
+      },
+      "rx_bytes": {
+        "name": "Port {port} RX"
+      },
+      "tx_packets": {
+        "name": "Port {port} TX Packets"
+      },
+      "rx_packets": {
+        "name": "Port {port} RX Packets"
+      },
+      "flow_control": {
+        "name": "Port {port} Flow Control",
+        "state": {
+          "enabled": "Enabled",
+          "disabled": "Disabled"
+        }
+      }
+    }
   }
 }
