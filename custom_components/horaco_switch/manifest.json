@@ -1,13 +1,13 @@
 {
   "domain": "horaco_switch",
   "name": "HORACO Managed Switch",
-  "codeowners": [],
+  "codeowners": ["@brunoz78"],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/gtrancillo/horaco_switch_ha",
+  "documentation": "https://github.com/brunoz78/horaco_switch_ha",
   "integration_type": "device",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/gtrancillo/horaco_switch_ha/issues",
+  "issue_tracker": "https://github.com/brunoz78/horaco_switch_ha/issues",
   "requirements": ["beautifulsoup4>=4.12.0"],
   "version": "1.1.0"
 }

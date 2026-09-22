@@ -1,8 +1,8 @@
 # HORACO Managed Switch — Home Assistant Integration
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-[![GitHub Release](https://img.shields.io/github/v/release/gtrancillo/horaco_switch_ha)](https://github.com/gtrancillo/horaco_switch_ha/releases)
-[![Validate](https://github.com/gtrancillo/horaco_switch_ha/actions/workflows/validate.yml/badge.svg)](https://github.com/gtrancillo/horaco_switch_ha/actions/workflows/validate.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/brunoz78/horaco_switch_ha)](https://github.com/brunoz78/horaco_switch_ha/releases)
+[![Validate](https://github.com/brunoz78/horaco_switch_ha/actions/workflows/validate.yml/badge.svg)](https://github.com/brunoz78/horaco_switch_ha/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![HA Version](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue)](https://www.home-assistant.io/)
 
@@ -38,13 +38,13 @@ Control and monitor your **HORACO**, **keepLink** and compatible OEM managed swi
 ### Via HACS (recommended)
 
 1. HACS → Integrations → ⋮ → **Custom repositories**
-2. URL: `https://github.com/gtrancillo/horaco_switch_ha` · Type: **Integration**
+2. URL: `https://github.com/brunoz78/horaco_switch_ha` · Type: **Integration**
 3. Install **HORACO Managed Switch** and restart HA
 4. **Settings → Devices & Services → Add Integration → HORACO Managed Switch**
 
 ### Manual
 
-1. Download the latest `horaco_switch.zip` from [Releases](https://github.com/gtrancillo/horaco_switch_ha/releases/latest)
+1. Download the latest `horaco_switch.zip` from [Releases](https://github.com/brunoz78/horaco_switch_ha/releases/latest)
 2. Unzip and copy the `horaco_switch/` folder into `<config>/custom_components/`
 3. Restart HA and add the integration via the UI
 
@@ -142,11 +142,9 @@ A 0.4 s delay between sequential requests prevents session thrashing on the swit
 
 ## Contributing
 
-See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the full workflow.
+Workflow: fork → branch → PR → both CI checks green → merge.
 
-Short version: fork → branch → PR → both CI checks green → merge.
-
-**Found a compatible device?** Open a [New device issue](https://github.com/gtrancillo/horaco_switch_ha/issues/new?template=new_device.yml) and we'll add it to the table.
+**Found a compatible device?** Open an [issue](https://github.com/brunoz78/horaco_switch_ha/issues/new) with model, firmware version and port layout, and it will be added to the table.
 
 ---
 
@@ -172,5 +170,7 @@ This ensures no commit lands on `main` without both CI validations passing.
 MIT — see [LICENSE](LICENSE)
 
 ## Credits
+
+Forked from [gtrancillo/horaco_switch_ha](https://github.com/gtrancillo/horaco_switch_ha).
 
 CGI endpoint knowledge and scraping approach from [byte4geek/switch-dashboard](https://github.com/byte4geek/switch-dashboard).
