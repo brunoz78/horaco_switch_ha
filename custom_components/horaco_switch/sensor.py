@@ -2,12 +2,15 @@
 
 Architecture:
   • One Device per switch (model, firmware, uptime, MAC, ports summary)
-  • Per-port entities live on that same device, named "Port N …"
-    (speed enabled by default; duplex, flow control and counters disabled by default)
+  • Per-port entities live on that same device:
+      "Port N"   → one enum sensor combining link and speed
+                   (disconnected / disabled / 100m / 1000m / 2500m / 10g …)
+      "Port N …" → duplex, flow control and counters, disabled by default
 """
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -25,7 +28,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import HoracoCoordinator
-from .const import DOMAIN
+from .const import DOMAIN, PORT_STATUS_DISABLED, PORT_STATUS_UP
 from .scraper import PortData, SwitchData
 
 _LOGGER = logging.getLogger(__name__)
@@ -84,7 +87,7 @@ SWITCH_SENSORS: tuple[SwitchSensorDesc, ...] = (
         translation_key="ports_up",
         icon="mdi:ethernet",
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda d: sum(1 for p in d.ports if p.status == "up"),
+        value_fn=lambda d: sum(1 for p in d.ports if p.status == PORT_STATUS_UP),
     ),
     SwitchSensorDesc(
         key="ports_total",
@@ -104,12 +107,35 @@ class PortSensorDesc(SensorEntityDescription):
     value_fn: Callable[[PortData], Any] | None = None
 
 
+PORT_STATE_OPTIONS = [
+    "disconnected", "disabled", "10m", "100m", "1000m", "2500m", "5000m", "10g",
+]
+
+
+def port_state(p: PortData) -> str | None:
+    """Combine link and speed into one state: "disconnected", "disabled" or the speed."""
+    if p.status == PORT_STATUS_DISABLED:
+        return "disabled"
+    if p.status != PORT_STATUS_UP:
+        return "disconnected"
+    m = re.match(r"(\d+)\s*([MG])?", p.speed, re.IGNORECASE)
+    if not m:
+        return None
+    mbit = int(m.group(1)) * (1000 if (m.group(2) or "").upper() == "G" else 1)
+    state = f"{mbit // 1000}g" if mbit >= 10000 else f"{mbit}m"
+    if state not in PORT_STATE_OPTIONS:
+        _LOGGER.warning("Unknown port speed %r", p.speed)
+        return None
+    return state
+
+
 PORT_SENSORS: tuple[PortSensorDesc, ...] = (
     PortSensorDesc(
-        key="speed",
-        translation_key="speed",
-        icon="mdi:speedometer",
-        value_fn=lambda p: p.speed or None,
+        key="state",
+        translation_key="port",
+        device_class=SensorDeviceClass.ENUM,
+        options=PORT_STATE_OPTIONS,
+        value_fn=port_state,
     ),
     PortSensorDesc(
         key="duplex",
@@ -260,11 +286,27 @@ class PortLevelSensor(CoordinatorEntity[HoracoCoordinator], SensorEntity):
         return self.entity_description.value_fn(p) if p else None
 
     @property
-    def extra_state_attributes(self) -> dict[str, Any]:
+    def icon(self) -> str | None:
+        if self.entity_description.key != "state":
+            return super().icon
+        p = self._port()
+        return "mdi:ethernet" if (p and p.status == PORT_STATUS_UP) else "mdi:ethernet-off"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        # All port details on the main "Port N" sensor, nothing on the optional ones
+        if self.entity_description.key != "state":
+            return None
         p = self._port()
         if not p:
             return {}
         return {
-            "status": p.status,
-            "link": p.link,
+            "link":         p.link,
+            "speed":        p.speed,
+            "duplex":       p.duplex,
+            "flow_control": p.flow_control,
+            "tx_packets":   p.tx_packets,
+            "rx_packets":   p.rx_packets,
+            "tx_bytes":     p.tx_bytes,
+            "rx_bytes":     p.rx_bytes,
         }

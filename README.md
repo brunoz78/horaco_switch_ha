@@ -28,7 +28,7 @@ Die Integration meldet sich an der Weboberfläche des Switches an und liest Ger�
 
 ## Funktionen
 
-- 🔌 **Port-Überwachung** — Verbindung und Geschwindigkeit pro Port, optional Duplex, Flusskontrolle und Paketzähler
+- 🔌 **Port-Überwachung** — ein Sensor pro Port mit Verbindung und Geschwindigkeit (z. B. `Getrennt`, `1000M`, `2500M`), optional Duplex, Flusskontrolle und Paketzähler
 - 🔄 **Neustart-Taste** — Switch per Knopfdruck aus jedem Dashboard oder jeder Automation neu starten
 - ⚡ **Direkte Abfrage im LAN** — vollständig lokal, keine Cloud, kein Proxy
 - 🔧 **Einstellbares Abfrageintervall** — 10 bis 300 Sekunden (Standard 30 s)
@@ -84,17 +84,18 @@ Pro Switch gibt es **ein Gerät**. Alle Entitäten — auch die der einzelnen Po
 
 | Entität | Typ | Standard | Beschreibung |
 |---------|-----|----------|--------------|
-| Port N Verbindung | Binärsensor | aktiv | `Ein` = verbunden · `Aus` = getrennt/deaktiviert. Enthält alle Port-Werte als Attribute. |
-| Port N Geschwindigkeit | Sensor | aktiv | `100M` · `1000M` · `2500M` · `10G` |
+| Port N | Sensor | aktiv | Verbindung und Geschwindigkeit in einem: `Getrennt` · `Deaktiviert` · `10M` · `100M` · `1000M` · `2500M` · `5000M` · `10G`. Enthält alle Port-Werte als Attribute. |
 | Port N Duplex | Sensor | deaktiviert | `Vollduplex` oder `Halbduplex` |
 | Port N Flusskontrolle | Sensor | deaktiviert | `Ein` oder `Aus` |
 | Port N Gesendete Pakete | Sensor | deaktiviert | Gesendete Pakete (fortlaufend) |
 | Port N Empfangene Pakete | Sensor | deaktiviert | Empfangene Pakete (fortlaufend) |
 | Port N Gesendet / Empfangen | Sensor | deaktiviert | Bytes (fortlaufend) — nur wenn der Switch Byte-Zähler liefert |
 
+**Getrennt** heisst: Der Port ist eingeschaltet, aber es ist kein Gerät verbunden (kein Kabel oder Gegenstelle aus). **Deaktiviert** heisst: Der Port wurde in der Weboberfläche des Switches bewusst abgeschaltet.
+
 Deaktivierte Entitäten lassen sich bei Bedarf unter **Einstellungen → Geräte & Dienste → Entitäten** einschalten.
 
-Die Entitäts-IDs folgen dem Muster `binary_sensor.switch_192_168_1_100_port_3_link` bzw. `sensor.switch_192_168_1_100_port_3_speed`.
+Die Entitäts-IDs folgen dem Muster `sensor.switch_192_168_1_100_port_3` bzw. `sensor.switch_192_168_1_100_port_3_duplex`.
 
 ---
 
@@ -106,8 +107,8 @@ Die Entitäts-IDs folgen dem Muster `binary_sensor.switch_192_168_1_100_port_3_l
 alias: "Switch-Port 3 getrennt"
 triggers:
   - trigger: state
-    entity_id: binary_sensor.switch_192_168_1_100_port_3_link
-    to: "off"
+    entity_id: sensor.switch_192_168_1_100_port_3
+    to: "disconnected"
     for: "00:00:30"
 actions:
   - action: notify.mobile_app

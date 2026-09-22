@@ -24,7 +24,6 @@ _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [
     Platform.SENSOR,
-    Platform.BINARY_SENSOR,
     Platform.BUTTON,
 ]
 
@@ -54,8 +53,10 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     switch device, get IDs like binary_sensor.switch_10_0_1_4_port_1_link,
     everything except link and speed is disabled by default, and the empty
     port devices are removed.
+    v2 → v3: link and speed are merged into one "Port N" sensor; the old
+    link/speed entries are removed.
     """
-    if entry.version > 2:
+    if entry.version > 3:
         return False
 
     if entry.version == 1:
@@ -90,6 +91,19 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         hass.config_entries.async_update_entry(entry, version=2)
         _LOGGER.info("[%s] Migrated config entry to version 2", ip)
+
+    if entry.version == 2:
+        # v2 → v3: "Port N Link" (binary_sensor) and "Port N Speed" are replaced
+        # by one combined "Port N" sensor; drop the old registry entries.
+        ip = entry.data[CONF_HOST]
+        ent_reg = er.async_get(hass)
+        pattern = re.compile(rf"^{DOMAIN}_{re.escape(ip)}_port\d+_(link|speed)$")
+        for ent in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
+            if pattern.match(ent.unique_id):
+                ent_reg.async_remove(ent.entity_id)
+
+        hass.config_entries.async_update_entry(entry, version=3)
+        _LOGGER.info("[%s] Migrated config entry to version 3", ip)
 
     return True
 

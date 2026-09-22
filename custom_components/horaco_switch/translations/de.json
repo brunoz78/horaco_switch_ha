@@ -31,17 +31,25 @@
     }
   },
   "entity": {
-    "binary_sensor": {
-      "link": {
-        "name": "Port {port} Verbindung"
-      }
-    },
     "button": {
       "reboot": {
         "name": "Neustart"
       }
     },
     "sensor": {
+      "port": {
+        "name": "Port {port}",
+        "state": {
+          "disconnected": "Getrennt",
+          "disabled": "Deaktiviert",
+          "10m": "10M",
+          "100m": "100M",
+          "1000m": "1000M",
+          "2500m": "2500M",
+          "5000m": "5000M",
+          "10g": "10G"
+        }
+      },
       "uptime": {
         "name": "Betriebszeit"
       },
@@ -56,9 +64,6 @@
       },
       "ports_total": {
         "name": "Ports gesamt"
-      },
-      "speed": {
-        "name": "Port {port} Geschwindigkeit"
       },
       "duplex": {
         "name": "Port {port} Duplex",
