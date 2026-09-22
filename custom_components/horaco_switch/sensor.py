@@ -22,6 +22,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -187,10 +188,17 @@ async def async_setup_entry(
     entities: list[SensorEntity] = []
 
     data = coordinator.data
+    ent_reg = er.async_get(hass)
 
     # Switch-level sensors (skip uptime on firmware that doesn't report it)
     for desc in SWITCH_SENSORS:
         if desc.key == "uptime" and data and not data.uptime:
+            # Remove the entry left behind by earlier versions, which always created it
+            stale = ent_reg.async_get_entity_id(
+                "sensor", DOMAIN, f"{DOMAIN}_{coordinator.scraper.ip}_{desc.key}"
+            )
+            if stale:
+                ent_reg.async_remove(stale)
             continue
         entities.append(SwitchLevelSensor(coordinator, desc))
 
