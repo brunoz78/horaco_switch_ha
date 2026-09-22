@@ -6,7 +6,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![HA Version](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue)](https://www.home-assistant.io/)
 
-Überwache und steuere deine Managed Switches von **HORACO**, **keepLink** und kompatiblen OEM-Herstellern direkt aus Home Assistant — **ohne zusätzliche App, ohne Docker, ohne Zwischendienst**. Die Integration spricht direkt mit der eingebauten Weboberfläche des Switches, über dieselben CGI-Endpunkte wie [byte4geek/switch-dashboard](https://github.com/byte4geek/switch-dashboard), umgesetzt als native, vollständig asynchrone HA-Integration.
+Überwache deine günstigen Managed Switches von **HORACO**, **keepLink** und baugleichen OEM-Herstellern (Realtek-Chipsatz) direkt in Home Assistant — **ohne zusätzliche App, ohne Docker, ohne Zwischendienst**.
+
+Die Integration meldet sich an der Weboberfläche des Switches an und liest Geräte-Info, Port-Status und Zähler direkt von dessen Seiten aus. Sie erkennt dabei zwei Seitenaufbauten: den der HORACO-Modelle und den der keepLink-KP-9000-Serie, bei der die Port-Daten auf einer anderen Seite stehen. Pro Switch entsteht ein Gerät mit deutschsprachigen Entitäten; mehrere Switches lassen sich parallel einbinden.
 
 ---
 
@@ -150,23 +152,6 @@ Zwischen den einzelnen Anfragen liegt eine Pause von 0,4 s, damit der uIP-Mikroc
 Ablauf: Fork → Branch → Pull Request → beide CI-Prüfungen grün → Merge.
 
 **Kompatibles Gerät gefunden?** Eröffne ein [Issue](https://github.com/brunoz78/horaco_switch_ha/issues/new) mit Modell, Firmware-Version und Port-Ausstattung, dann wird es in die Tabelle aufgenommen.
-
----
-
-## Schutz des `main`-Branches (Anleitung zur Repo-Einrichtung)
-
-Unter **Settings → Branches → Add rule** auf GitHub Folgendes einstellen:
-
-| Einstellung | Wert |
-|-------------|------|
-| Branch name pattern | `main` |
-| Require a pull request before merging | ✅ |
-| Require approvals | 1 (oder 0 bei Einzelprojekten) |
-| Require status checks to pass | ✅ |
-| Status checks required | `HACS validation`, `hassfest` |
-| Do not allow bypassing the above settings | ✅ (optional, aber empfohlen) |
-
-So landet kein Commit auf `main`, ohne dass beide CI-Prüfungen erfolgreich waren.
 
 ---
 
