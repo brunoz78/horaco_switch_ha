@@ -64,7 +64,14 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         slug = ip.replace(".", "_")
         ent_reg = er.async_get(hass)
         dev_reg = dr.async_get(hass)
-        switch_dev = dev_reg.async_get_device(identifiers={(DOMAIN, ip)})
+        switch_dev = next(
+            (
+                dev
+                for dev in dr.async_entries_for_config_entry(dev_reg, entry.entry_id)
+                if (DOMAIN, ip) in dev.identifiers
+            ),
+            None,
+        )
         pattern = re.compile(rf"^{DOMAIN}_{re.escape(ip)}_port(\d+)_(\w+)$")
         suffix = {"tx_bytes": "tx", "rx_bytes": "rx"}
 
