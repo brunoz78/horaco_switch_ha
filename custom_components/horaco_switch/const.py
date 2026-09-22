@@ -16,6 +16,18 @@ CGI_PORT_STATS = "/port.cgi?page=stats"
 CGI_PORT_CFG  = "/port.cgi"
 CGI_REBOOT    = "/reboot.cgi"
 
+def object_id(ip: str, suffix: str) -> str:
+    """Language-independent object id, e.g. switch_10_0_1_4_port_1_duplex.
+
+    Set explicitly so that IDs don't follow the (translated) entity name.
+    """
+    return f"switch_{ip.replace('.', '_')}_{suffix}"
+
+
+# Port entity key → object id suffix ("" = plain "port_N")
+PORT_ID_SUFFIX = {"state": "", "tx_bytes": "tx", "rx_bytes": "rx"}
+
+
 # Port status values
 PORT_STATUS_UP       = "up"
 PORT_STATUS_DOWN     = "down"

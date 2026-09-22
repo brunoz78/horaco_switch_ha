@@ -39,7 +39,7 @@ async def _try_connect(hass: HomeAssistant, data: dict[str, Any]) -> SwitchData:
 
 
 class HoracoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 3
+    VERSION = 4
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         errors: dict[str, str] = {}

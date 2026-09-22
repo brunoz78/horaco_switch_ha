@@ -17,7 +17,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, object_id
 from .scraper import HoracoScraper, SwitchData
 
 _LOGGER = logging.getLogger(__name__)
@@ -55,8 +55,9 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     port devices are removed.
     v2 → v3: link and speed are merged into one "Port N" sensor; the old
     link/speed entries are removed.
+    v3 → v4: error sensors get fixed English entity IDs.
     """
-    if entry.version > 3:
+    if entry.version > 4:
         return False
 
     if entry.version == 1:
@@ -111,6 +112,23 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         hass.config_entries.async_update_entry(entry, version=3)
         _LOGGER.info("[%s] Migrated config entry to version 3", ip)
+
+    if entry.version == 3:
+        # v3 → v4: the error sensors added in v3 got IDs from the translated
+        # name ("…_port_2_sendefehler"); give them the fixed English IDs.
+        ip = entry.data[CONF_HOST]
+        ent_reg = er.async_get(hass)
+        pattern = re.compile(rf"^{DOMAIN}_{re.escape(ip)}_port(\d+)_(tx_errors|rx_errors)$")
+        for ent in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
+            m = pattern.match(ent.unique_id)
+            if not m:
+                continue
+            new_id = f"sensor.{object_id(ip, f'port_{m.group(1)}_{m.group(2)}')}"
+            if ent.entity_id != new_id and not ent_reg.async_get(new_id):
+                ent_reg.async_update_entity(ent.entity_id, new_entity_id=new_id)
+
+        hass.config_entries.async_update_entry(entry, version=4)
+        _LOGGER.info("[%s] Migrated config entry to version 4", ip)
 
     return True
 

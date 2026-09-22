@@ -14,7 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import HoracoCoordinator
-from .const import DOMAIN
+from .const import DOMAIN, object_id
 from .sensor import switch_device_info   # reuse the helper
 
 _LOGGER = logging.getLogger(__name__)
@@ -40,6 +40,7 @@ class RebootButton(CoordinatorEntity[HoracoCoordinator], ButtonEntity):
     def __init__(self, coordinator: HoracoCoordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_{coordinator.scraper.ip}_reboot"
+        self.entity_id = f"button.{object_id(coordinator.scraper.ip, 'reboot')}"
         self._attr_device_info = switch_device_info(coordinator)
 
     async def async_press(self) -> None:

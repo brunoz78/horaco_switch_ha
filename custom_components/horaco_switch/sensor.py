@@ -28,7 +28,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import HoracoCoordinator
-from .const import DOMAIN, PORT_STATUS_DISABLED, PORT_STATUS_UP
+from .const import DOMAIN, PORT_ID_SUFFIX, PORT_STATUS_DISABLED, PORT_STATUS_UP, object_id
 from .scraper import PortData, SwitchData
 
 _LOGGER = logging.getLogger(__name__)
@@ -263,6 +263,7 @@ class SwitchLevelSensor(CoordinatorEntity[HoracoCoordinator], SensorEntity):
         super().__init__(coordinator)
         self.entity_description = desc
         self._attr_unique_id = f"{DOMAIN}_{coordinator.scraper.ip}_{desc.key}"
+        self.entity_id = f"sensor.{object_id(coordinator.scraper.ip, desc.key)}"
         self._attr_has_entity_name = True
         self._attr_device_info = switch_device_info(coordinator)
 
@@ -286,6 +287,10 @@ class PortLevelSensor(CoordinatorEntity[HoracoCoordinator], SensorEntity):
         self.entity_description = desc
         self._port_num = port_num
         self._attr_unique_id = f"{DOMAIN}_{coordinator.scraper.ip}_port{port_num}_{desc.key}"
+        suffix = PORT_ID_SUFFIX.get(desc.key, desc.key)
+        self.entity_id = "sensor." + object_id(
+            coordinator.scraper.ip, f"port_{port_num}" + (f"_{suffix}" if suffix else "")
+        )
         self._attr_has_entity_name = True
         self._attr_translation_placeholders = {"port": port_num}
         self._attr_device_info = switch_device_info(coordinator)
