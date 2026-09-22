@@ -7,7 +7,7 @@
 
 Überwache deine günstigen Managed Switches von **HORACO**, **keepLink** und baugleichen OEM-Herstellern (Realtek-Chipsatz) direkt in Home Assistant — **ohne zusätzliche App, ohne Docker, ohne Zwischendienst**.
 
-Die Integration meldet sich an der Weboberfläche des Switches an und liest Geräte-Info, Port-Status und Zähler direkt von dessen Seiten aus. Sie erkennt dabei zwei Seitenaufbauten: den der HORACO-Modelle und den der keepLink-KP-9000-Serie, bei der die Port-Daten auf einer anderen Seite stehen. Pro Switch entsteht ein Gerät; mehrere Switches lassen sich parallel einbinden. Die Namen der Entitäten erscheinen in der Sprache von Home Assistant (Deutsch oder Englisch).
+Die Integration meldet sich an der Weboberfläche des Switches an und liest Geräte-Info, Port-Status und Zähler direkt von dessen Seiten aus. Sie erkennt dabei zwei Seitenaufbauten der Firmware: einen, bei dem die Port-Daten auf der Info-Seite stehen, und einen, bei dem sie auf der Port-Seite stehen (z. B. keepLink KP-9000-9XHML-X und HORACO ZX-SWTGW215AS). Pro Switch entsteht ein Gerät; mehrere Switches lassen sich parallel einbinden. Die Namen der Entitäten erscheinen in der Sprache von Home Assistant (Deutsch oder Englisch).
 
 ---
 
@@ -78,7 +78,7 @@ Pro Switch gibt es **ein Gerät** mit dem Namen `Switch <IP-Adresse>`, z. B. `Sw
 | Aktive Ports | Sensor | Anzahl verbundener Ports |
 | Ports gesamt | Sensor | Anzahl physischer Ports |
 | Neustart | Taste | Startet den Switch neu |
-| Betriebszeit | Sensor | z. B. `3d 14h 22m` — **nur** wenn die Firmware die Laufzeit meldet (die KP-9000-Serie tut das nicht) |
+| Betriebszeit | Sensor | z. B. `3d 14h 22m` — **nur** wenn die Firmware die Laufzeit meldet (KP-9000-9XHML-X und ZX-SWTGW215AS tun das nicht) |
 
 ### Pro Port *(N = 1 … Anzahl Ports)*
 
@@ -89,7 +89,7 @@ Pro Switch gibt es **ein Gerät** mit dem Namen `Switch <IP-Adresse>`, z. B. `Sw
 | Port N Flusskontrolle | Sensor | deaktiviert | `Ein` oder `Aus` |
 | Port N Gesendete Pakete | Sensor | deaktiviert | Gesendete Pakete (fortlaufend) |
 | Port N Empfangene Pakete | Sensor | deaktiviert | Empfangene Pakete (fortlaufend) |
-| Port N Gesendet / Empfangen | Sensor | deaktiviert | Bytes (fortlaufend) — **nur** wenn der Switch Byte-Zähler liefert (die KP-9000-Serie tut das nicht) |
+| Port N Gesendet / Empfangen | Sensor | deaktiviert | Bytes (fortlaufend) — **nur** wenn der Switch Byte-Zähler liefert (KP-9000-9XHML-X und ZX-SWTGW215AS tun das nicht) |
 
 **Getrennt** heisst: Der Port ist eingeschaltet, aber es ist kein Gerät verbunden (kein Kabel oder Gegenstelle aus). **Deaktiviert** heisst: Der Port wurde in der Weboberfläche des Switches bewusst abgeschaltet.
 
@@ -140,9 +140,9 @@ actions:
 Bei jeder Abfrage (alle N Sekunden):
 
 1. **Anmeldung** — `POST /login.cgi` mit Benutzername, Passwort und `MD5(Benutzername + Passwort)`; der Hash wird bei den folgenden Anfragen als Cookie mitgeschickt
-2. `GET /info.cgi` → Modell, Firmware, MAC, Laufzeit; bei den HORACO-Modellen zusätzlich Link und Geschwindigkeit pro Port
+2. `GET /info.cgi` → Modell, Firmware, MAC, Laufzeit; je nach Firmware zusätzlich Link und Geschwindigkeit pro Port
 3. `GET /port.cgi?page=stats` → Paketzähler pro Port
-4. `GET /port.cgi` → Port aktiviert/deaktiviert; bei der KP-9000-Serie zusätzlich Link, Geschwindigkeit/Duplex und Flusskontrolle
+4. `GET /port.cgi` → Port aktiviert/deaktiviert; steht auf `/info.cgi` keine Porttabelle (z. B. KP-9000-9XHML-X, ZX-SWTGW215AS), kommen Link, Geschwindigkeit/Duplex und Flusskontrolle von hier
 
 Die **Neustart**-Taste sendet `POST /reboot.cgi` mit `cmd=reboot`.
 
