@@ -1,6 +1,6 @@
 # HORACO Managed Switch
 
-Native Home-Assistant-Integration für HORACO HC-SWTGW218AS, HC-SWTGW215AS,
+Native Home-Assistant-Integration für HORACO HC-SWTGW218AS, HC-SWTGW215AS, ZX-SWTGW215AS,
 keepLink KP9000 / KP-9000-9XHML-X und kompatible OEM-Managed-Switches.
 
 **Keine zusätzliche App und kein Zwischendienst nötig** — die Integration spricht direkt mit der CGI-Schnittstelle des Switches.

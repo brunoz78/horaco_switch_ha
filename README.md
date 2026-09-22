@@ -16,6 +16,7 @@ Die Integration meldet sich an der Weboberfläche des Switches an und liest Ger�
 | Modell | Ports | SFP+ | Status |
 |--------|-------|------|--------|
 | keepLink KP-9000-9XHML-X (FW V100.9.9.1.7) | 8 × 2.5GbE | 1 × 10G | ✅ Mit dieser Version getestet |
+| HORACO ZX-SWTGW215AS (FW V1.9) | 5 × 2.5GbE | 1 × 10G | ✅ Mit dieser Version getestet |
 | keepLink KP9000-9XH-X | 8 × GbE | 1 × 10G | ☑️ Laut Originalprojekt bestätigt |
 | HORACO HC-SWTGW218AS | 8 × GbE | 2 × 10G | ☑️ Laut Originalprojekt bestätigt |
 | HORACO HC-SWTGW215AS | 5 × GbE | — | ☑️ Laut Originalprojekt bestätigt |
