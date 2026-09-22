@@ -28,7 +28,7 @@ Die Integration meldet sich an der Weboberfläche des Switches an und liest Ger�
 
 ## Funktionen
 
-- 🔌 **Port-Überwachung** — ein Sensor pro Port mit Verbindung und Geschwindigkeit (z. B. `Getrennt`, `1000M`, `2500M`), optional Duplex, Flusskontrolle und Paketzähler
+- 🔌 **Port-Überwachung** — ein Sensor pro Port mit Verbindung und Geschwindigkeit (z. B. `Getrennt`, `1000M`, `2500M`), optional Duplex, Flusskontrolle, Paket- und Fehlerzähler
 - 🔄 **Neustart-Taste** — Switch per Knopfdruck aus jedem Dashboard oder jeder Automation neu starten
 - ⚡ **Direkte Abfrage im LAN** — vollständig lokal, keine Cloud, kein Proxy
 - 🔧 **Einstellbares Abfrageintervall** — 10 bis 300 Sekunden (Standard 30 s)
@@ -89,11 +89,15 @@ Pro Switch gibt es **ein Gerät** mit dem Namen `Switch <IP-Adresse>`, z. B. `Sw
 | Port N Flusskontrolle | Sensor | deaktiviert | `Ein` oder `Aus` |
 | Port N Gesendete Pakete | Sensor | deaktiviert | Gesendete Pakete (fortlaufend) |
 | Port N Empfangene Pakete | Sensor | deaktiviert | Empfangene Pakete (fortlaufend) |
+| Port N Sendefehler | Sensor | deaktiviert | Fehlerhaft gesendete Pakete (fortlaufend) — steigende Werte deuten auf Kabel- oder Steckerprobleme hin |
+| Port N Empfangsfehler | Sensor | deaktiviert | Fehlerhaft empfangene Pakete (fortlaufend) |
 | Port N Gesendet / Empfangen | Sensor | deaktiviert | Bytes (fortlaufend) — **nur** wenn der Switch Byte-Zähler liefert (KP-9000-9XHML-X und ZX-SWTGW215AS tun das nicht) |
 
 **Getrennt** heisst: Der Port ist eingeschaltet, aber es ist kein Gerät verbunden (kein Kabel oder Gegenstelle aus). **Deaktiviert** heisst: Der Port wurde in der Weboberfläche des Switches bewusst abgeschaltet.
 
 Deaktivierte Entitäten lassen sich bei Bedarf unter **Einstellungen → Geräte & Dienste → Entitäten** einschalten.
+
+Schlägt das Lesen der Statistikseite einmal fehl, zeigen die Paket- und Fehlerzähler kurz „Unbekannt“ statt `0`. So hält Home Assistant einen Aussetzer nicht fälschlich für einen Zählerreset, der die Langzeitstatistik verfälschen würde.
 
 Die Entitäts-IDs folgen dem Muster `sensor.switch_192_168_1_100_port_3` bzw. `sensor.switch_192_168_1_100_port_3_duplex`. In Automationen lauten die Zustände des Port-Sensors `disconnected`, `disabled`, `10m`, `100m`, `1000m`, `2500m`, `5000m` und `10g`.
 
@@ -141,20 +145,29 @@ Bei jeder Abfrage (alle N Sekunden):
 
 1. **Anmeldung** — `POST /login.cgi` mit Benutzername, Passwort und `MD5(Benutzername + Passwort)`; der Hash wird bei den folgenden Anfragen als Cookie mitgeschickt
 2. `GET /info.cgi` → Modell, Firmware, MAC, Laufzeit; je nach Firmware zusätzlich Link und Geschwindigkeit pro Port
-3. `GET /port.cgi?page=stats` → Paketzähler pro Port
+3. `GET /port.cgi?page=stats` → Paket- und Fehlerzähler pro Port
 4. `GET /port.cgi` → Port aktiviert/deaktiviert; steht auf `/info.cgi` keine Porttabelle (z. B. KP-9000-9XHML-X, ZX-SWTGW215AS), kommen Link, Geschwindigkeit/Duplex und Flusskontrolle von hier
 
 Die **Neustart**-Taste sendet `POST /reboot.cgi` mit `cmd=reboot`.
 
 Jede Anfrage schickt den HTTP-Header `Referer` mit. Neuere Firmware (z. B. V100.9.9.1.7 auf Hardware V3.1) liefert ohne diesen Header eine leere Seite — deshalb bleibt eine direkt in die Adresszeile eingegebene URL wie `http://<ip>/info.cgi` dort weiss. Ältere Firmware (z. B. V1.9 auf Hardware V1.1) prüft das nicht.
 
-Zwischen den einzelnen Anfragen liegt eine Pause von 0,4 s, damit der Mikrocontroller des Switches nicht überlastet wird.
+Zwischen den einzelnen Anfragen liegt eine Pause von 0,4 s, damit der Mikrocontroller des Switches nicht überlastet wird. Bricht der Switch eine Verbindung ohne Antwort ab (kommt bei manchen Firmware-Versionen gelegentlich vor), wird die Anfrage bis zu dreimal wiederholt.
 
 ---
 
 ## Mitwirken
 
-Ablauf: Fork → Branch → Pull Request → beide CI-Prüfungen grün → Merge.
+Ablauf: Fork → Branch → Pull Request → alle CI-Prüfungen grün (HACS, hassfest, Parser-Tests) → Merge.
+
+Die Parser-Tests laufen ohne Switch und ohne Home Assistant gegen echte Seiten der getesteten Modelle (`tests/fixtures/`):
+
+```bash
+pip install -r requirements_test.txt
+python -m pytest tests
+```
+
+Wer ein neues Modell ergänzt, legt am besten dessen `info.cgi`, `port.cgi` und `port.cgi?page=stats` (MAC und IP anonymisiert) als neuen Ordner unter `tests/fixtures/` ab.
 
 **Kompatibles Gerät gefunden?** Eröffne ein [Issue](https://github.com/brunoz78/horaco_switch_ha/issues/new) mit Modell, Firmware-Version und Port-Ausstattung, dann wird es in die Tabelle aufgenommen.
 

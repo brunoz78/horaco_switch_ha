@@ -1,0 +1,89 @@
+<!-- Reproduced from a capture of a real HORACO ZX-SWTGW215AS (HW V1.1, FW V1.9):
+     same markup and values, whitespace may differ. MAC, IP addresses and
+     device name replaced by documentation values. -->
+<html>
+
+<head>
+<title>Port Stistics</title>
+<link rel="stylesheet" type="text/css" href="/style.css">
+</head>
+
+<body>
+<center>
+
+<fieldset>
+<legend>Port Statistics</legend>
+<form method="post" action="/port.cgi?page=stats">
+<table>
+	<tr>
+		<th style="width:80px;">Port</th>
+		<th style="width:80px;">State</th>
+		<th style="width:80px;">Link Status</th>
+		<th style="width:100px;">TxGoodPkt</th>
+		<th style="width:100px;">TxBadPkt</th>
+		<th style="width:100px;">RxGoodPkt</th>
+		<th style="width:100px;">RxBadPkt</th>
+	</tr>
+	<tr>
+		<td>Port 1</td>
+		<td>Enable</td>
+		<td>Link Up</td>
+		<td>3357168</td>
+		<td>0</td>
+		<td>9440681</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>Port 2</td>
+		<td>Enable</td>
+		<td>Link Down</td>
+		<td>559875</td>
+		<td>0</td>
+		<td>344424</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>Port 3</td>
+		<td>Enable</td>
+		<td>Link Down</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>Port 4</td>
+		<td>Enable</td>
+		<td>Link Down</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>Port 5</td>
+		<td>Enable</td>
+		<td>Link Up</td>
+		<td>9811587</td>
+		<td>0</td>
+		<td>4212239</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>Port 6</td>
+		<td>Enable</td>
+		<td>Link Down</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+	</tr>
+</table>
+<br style="line-height:50%">
+<input type="submit" name="submit" value="   Clear   ">
+<input type="hidden" name="cmd" value="stats">
+</form>
+</fieldset>
+</center>
+</body>
+</html>

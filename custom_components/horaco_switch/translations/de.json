@@ -84,6 +84,12 @@
       "rx_packets": {
         "name": "Port {port} Empfangene Pakete"
       },
+      "tx_errors": {
+        "name": "Port {port} Sendefehler"
+      },
+      "rx_errors": {
+        "name": "Port {port} Empfangsfehler"
+      },
       "flow_control": {
         "name": "Port {port} Flusskontrolle",
         "state": {

@@ -5,7 +5,7 @@ Architecture:
   • Per-port entities live on that same device:
       "Port N"   → one enum sensor combining link and speed
                    (disconnected / disabled / 100m / 1000m / 2500m / 10g …)
-      "Port N …" → duplex, flow control and counters, disabled by default
+      "Port N …" → duplex, flow control, packet/error/byte counters, disabled by default
 """
 from __future__ import annotations
 
@@ -183,6 +183,22 @@ PORT_SENSORS: tuple[PortSensorDesc, ...] = (
         value_fn=lambda p: p.rx_packets,
     ),
     PortSensorDesc(
+        key="tx_errors",
+        translation_key="tx_errors",
+        entity_registry_enabled_default=False,
+        icon="mdi:alert-circle-outline",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn=lambda p: p.tx_errors,
+    ),
+    PortSensorDesc(
+        key="rx_errors",
+        translation_key="rx_errors",
+        entity_registry_enabled_default=False,
+        icon="mdi:alert-circle-outline",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn=lambda p: p.rx_errors,
+    ),
+    PortSensorDesc(
         key="flow_control",
         translation_key="flow_control",
         entity_registry_enabled_default=False,
@@ -225,10 +241,9 @@ async def async_setup_entry(
     if data:
         for port in data.ports:
             for desc in PORT_SENSORS:
-                # Byte counters only where the switch actually reports them
-                if desc.key == "tx_bytes" and port.tx_bytes is None:
-                    continue
-                if desc.key == "rx_bytes" and port.rx_bytes is None:
+                # Byte and error counters only where the switch actually reports them
+                if desc.key in ("tx_bytes", "rx_bytes", "tx_errors", "rx_errors") \
+                        and getattr(port, desc.key) is None:
                     continue
                 entities.append(PortLevelSensor(coordinator, port.port, desc))
 
@@ -307,6 +322,8 @@ class PortLevelSensor(CoordinatorEntity[HoracoCoordinator], SensorEntity):
             "flow_control": p.flow_control,
             "tx_packets":   p.tx_packets,
             "rx_packets":   p.rx_packets,
+            "tx_errors":    p.tx_errors,
+            "rx_errors":    p.rx_errors,
             "tx_bytes":     p.tx_bytes,
             "rx_bytes":     p.rx_bytes,
         }

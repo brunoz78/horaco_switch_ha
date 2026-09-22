@@ -1,0 +1,119 @@
+<!-- Captured from a real keepLink KP-9000-9XHML-X (HW V3.1, FW V100.9.9.1.7).
+     MAC, IP addresses and device name replaced by documentation values;
+     inline <script> bodies shortened. Everything else is unchanged. -->
+<html>
+
+<head>
+<title>Port Stistics</title>
+<link rel="stylesheet" type="text/css" href="/style.css">
+<script type="text/javascript">
+function loadstats() { /* splits "hi-lo" counters, omitted */ }
+</script>
+</head>
+
+<body onload="loadstats()">
+<center>
+
+<fieldset>
+<legend>Port Statistics</legend>
+<form method="post" action="/port.cgi?page=stats">
+<table>
+	<tr>
+		<th style="width:80px;">Port</th>
+		<th style="width:80px;">State</th>
+		<th style="width:80px;">Link Status</th>
+		<th style="width:100px;">TxGoodPkt</th>
+		<th style="width:100px;">TxBadPkt</th>
+		<th style="width:100px;">RxGoodPkt</th>
+		<th style="width:100px;">RxBadPkt</th>
+	</tr>
+	<tr>
+		<td>Port 1</td>
+		<td>Enable</td>
+		<td>Link Up</td>
+		<td id=port0-txgood>0-3792066</td>
+		<td>0</td>
+		<td id=port0-rxgood>0-4292483</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>Port 2</td>
+		<td>Enable</td>
+		<td>Link Up</td>
+		<td id=port1-txgood>0-5624720</td>
+		<td>0</td>
+		<td id=port1-rxgood>0-5189549</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>Port 3</td>
+		<td>Enable</td>
+		<td>Link Down</td>
+		<td id=port2-txgood>0-0</td>
+		<td>0</td>
+		<td id=port2-rxgood>0-0</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>Port 4</td>
+		<td>Enable</td>
+		<td>Link Up</td>
+		<td id=port3-txgood>0-1422698</td>
+		<td>0</td>
+		<td id=port3-rxgood>0-915389</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>Port 5</td>
+		<td>Enable</td>
+		<td>Link Up</td>
+		<td id=port4-txgood>0-825807</td>
+		<td>0</td>
+		<td id=port4-rxgood>0-205306</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>Port 6</td>
+		<td>Enable</td>
+		<td>Link Down</td>
+		<td id=port5-txgood>0-0</td>
+		<td>0</td>
+		<td id=port5-rxgood>0-0</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>Port 7</td>
+		<td>Enable</td>
+		<td>Link Up</td>
+		<td id=port6-txgood>0-698094</td>
+		<td>0</td>
+		<td id=port6-rxgood>0-13490</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>Port 8</td>
+		<td>Enable</td>
+		<td>Link Up</td>
+		<td id=port7-txgood>0-748099</td>
+		<td>0</td>
+		<td id=port7-rxgood>0-174547</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>Port 9</td>
+		<td>Enable</td>
+		<td>Link Down</td>
+		<td id=port8-txgood>0-0</td>
+		<td>0</td>
+		<td id=port8-rxgood>0-0</td>
+		<td>0</td>
+	</tr>
+</table>
+<br style="line-height:50%">
+<input type="submit" name="submit" value="   Clear   ">
+<input type="hidden" name="cmd" value="stats">
+</form>
+</fieldset>
+</center>
+</body>
+</html>

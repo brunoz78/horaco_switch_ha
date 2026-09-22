@@ -9,7 +9,7 @@ Auth flow:
   2. Cookie jar carries the session
   3. /info.cgi       → device info + port link/speed table
   4. /port.cgi       → admin enabled/disabled state per port
-  5. /port.cgi?page=stats → TX/RX byte & packet counters
+  5. /port.cgi?page=stats → TX/RX packet, error (and, if reported, byte) counters
   6. POST /reboot.cgi {"cmd":"reboot"} → remote reboot
 """
 from __future__ import annotations
@@ -42,6 +42,10 @@ _LOGGER = logging.getLogger(__name__)
 # (same rationale as the original switch-dashboard scraper.py)
 _REQUEST_DELAY = 0.4
 
+# Some firmware (e.g. V1.9) occasionally closes a connection without a reply
+_MAX_ATTEMPTS = 3
+_RETRY_DELAY = 1.0
+
 
 @dataclass
 class PortData:
@@ -54,10 +58,13 @@ class PortData:
     flow_control: str         # "Enabled" | "Disabled" | ""
     tx_bytes: int | None = None   # None = switch reports no byte counters
     rx_bytes: int | None = None
-    tx_packets: int = 0
-    rx_packets: int = 0
-    tx_errors: int = 0        # derived / future-use
-    rx_errors: int = 0
+    # Counters stay None until /port.cgi?page=stats was read successfully.
+    # Reporting 0 after a failed fetch would look like a counter reset to
+    # Home Assistant and inflate the long-term statistics on the next poll.
+    tx_packets: int | None = None
+    rx_packets: int | None = None
+    tx_errors: int | None = None  # TxBadPkt
+    rx_errors: int | None = None  # RxBadPkt
 
 
 @dataclass
@@ -104,56 +111,73 @@ class HoracoScraper:
             (self._username + self._password).encode()
         ).hexdigest()
 
-        form = aiohttp.FormData()
-        form.add_field("username", self._username)
-        form.add_field("password", self._password)
-        form.add_field("Response", md5hash)
-        form.add_field("language", "EN")
-
-        try:
-            async with self._session.post(
-                f"{self._base_url}{CGI_LOGIN}",
-                data=form,
-                headers={"Referer": f"{self._base_url}/login.html"},
-                timeout=aiohttp.ClientTimeout(total=20),
-                allow_redirects=True,
-            ) as resp:
-                resp.raise_for_status()
-                self._cookies["admin"] = md5hash
-                self._logged_in = True
-                _LOGGER.debug("[%s] Login OK", self.ip)
-        except Exception as exc:
-            self._logged_in = False
-            raise RuntimeError(f"Login failed for {self.ip}: {exc}") from exc
+        for attempt in range(1, _MAX_ATTEMPTS + 1):
+            # A FormData object can only be sent once, so build it per attempt
+            form = aiohttp.FormData()
+            form.add_field("username", self._username)
+            form.add_field("password", self._password)
+            form.add_field("Response", md5hash)
+            form.add_field("language", "EN")
+            try:
+                async with self._session.post(
+                    f"{self._base_url}{CGI_LOGIN}",
+                    data=form,
+                    headers={"Referer": f"{self._base_url}/login.html"},
+                    timeout=aiohttp.ClientTimeout(total=20),
+                    allow_redirects=True,
+                ) as resp:
+                    resp.raise_for_status()
+                    self._cookies["admin"] = md5hash
+                    self._logged_in = True
+                    _LOGGER.debug("[%s] Login OK", self.ip)
+                    return
+            except (aiohttp.ClientConnectionError, asyncio.TimeoutError) as exc:
+                if attempt < _MAX_ATTEMPTS:
+                    _LOGGER.debug("[%s] Login attempt %d failed (%s), retrying", self.ip, attempt, exc)
+                    await asyncio.sleep(_RETRY_DELAY)
+                    continue
+                self._logged_in = False
+                raise RuntimeError(f"Login failed for {self.ip}: {exc}") from exc
+            except Exception as exc:
+                self._logged_in = False
+                raise RuntimeError(f"Login failed for {self.ip}: {exc}") from exc
 
     # ------------------------------------------------------------------
     # HTTP helpers
     # ------------------------------------------------------------------
 
-    async def _fetch(self, path: str) -> str | None:
+    async def _fetch(self, path: str, _relogin: bool = True) -> str | None:
         if not self._logged_in:
             await self._login()
-        await asyncio.sleep(_REQUEST_DELAY)
-        try:
-            async with self._session.get(
-                f"{self._base_url}{path}",
-                # Required: newer firmware (e.g. V100.9.9.x on HW V3.x) returns an
-                # empty page without a Referer; older firmware (V1.9) ignores it.
-                headers={"Referer": f"{self._base_url}/"},
-                cookies=self._cookies,
-                timeout=aiohttp.ClientTimeout(total=20),
-                allow_redirects=True,
-            ) as resp:
-                if resp.status in (401, 403):
-                    _LOGGER.warning("[%s] Session expired, re-logging in", self.ip)
-                    self._logged_in = False
-                    await self._login()
-                    return await self._fetch(path)
-                resp.raise_for_status()
-                return await resp.text(encoding="utf-8", errors="replace")
-        except Exception as exc:
-            _LOGGER.error("[%s] Fetch %s failed: %s", self.ip, path, exc)
-            return None
+        for attempt in range(1, _MAX_ATTEMPTS + 1):
+            await asyncio.sleep(_REQUEST_DELAY)
+            try:
+                async with self._session.get(
+                    f"{self._base_url}{path}",
+                    # Required: newer firmware (e.g. V100.9.9.x on HW V3.x) returns an
+                    # empty page without a Referer; older firmware (V1.9) ignores it.
+                    headers={"Referer": f"{self._base_url}/"},
+                    cookies=self._cookies,
+                    timeout=aiohttp.ClientTimeout(total=20),
+                    allow_redirects=True,
+                ) as resp:
+                    if resp.status in (401, 403) and _relogin:
+                        _LOGGER.warning("[%s] Session expired, re-logging in", self.ip)
+                        self._logged_in = False
+                        await self._login()
+                        return await self._fetch(path, _relogin=False)
+                    resp.raise_for_status()
+                    return await resp.text(encoding="utf-8", errors="replace")
+            except (aiohttp.ClientConnectionError, asyncio.TimeoutError) as exc:
+                if attempt < _MAX_ATTEMPTS:
+                    _LOGGER.debug("[%s] Fetch %s attempt %d failed (%s), retrying", self.ip, path, attempt, exc)
+                    await asyncio.sleep(_RETRY_DELAY)
+                    continue
+                _LOGGER.error("[%s] Fetch %s failed after %d attempts: %s", self.ip, path, attempt, exc)
+            except Exception as exc:
+                _LOGGER.error("[%s] Fetch %s failed: %s", self.ip, path, exc)
+                return None
+        return None
 
     async def _post(self, path: str, data: dict[str, str]) -> str | None:
         if not self._logged_in:
@@ -368,10 +392,14 @@ class HoracoScraper:
                 rows = stats_table.find_all("tr")
                 if rows:
                     hdrs = [c.get_text(strip=True).lower() for c in rows[0].find_all(["td", "th"])]
-                    tx_pkt_i = rx_pkt_i = tx_b_i = rx_b_i = -1
+                    tx_pkt_i = rx_pkt_i = tx_b_i = rx_b_i = tx_err_i = rx_err_i = -1
                     for idx, h in enumerate(hdrs):
                         is_bytes = any(t in h for t in ["byte", "octet"])
-                        if not is_bytes and any(t in h for t in ["txgoodpkt", "txpackets", "tx packet", "txok"]):
+                        if any(t in h for t in ["txbadpkt", "txerr", "tx err"]):
+                            tx_err_i = idx
+                        elif any(t in h for t in ["rxbadpkt", "rxerr", "rx err"]):
+                            rx_err_i = idx
+                        elif not is_bytes and any(t in h for t in ["txgoodpkt", "txpackets", "tx packet", "txok"]):
                             tx_pkt_i = idx
                         elif not is_bytes and any(t in h for t in ["rxgoodpkt", "rxpackets", "rx packet", "rxok"]):
                             rx_pkt_i = idx
@@ -397,6 +425,10 @@ class HoracoScraper:
                                     p.tx_bytes = self._parse_counter(cells[tx_b_i].get_text(strip=True))
                                 if rx_b_i != -1 and len(cells) > rx_b_i:
                                     p.rx_bytes = self._parse_counter(cells[rx_b_i].get_text(strip=True))
+                                if tx_err_i != -1 and len(cells) > tx_err_i:
+                                    p.tx_errors = self._parse_counter(cells[tx_err_i].get_text(strip=True))
+                                if rx_err_i != -1 and len(cells) > rx_err_i:
+                                    p.rx_errors = self._parse_counter(cells[rx_err_i].get_text(strip=True))
                                 break
 
         return SwitchData(

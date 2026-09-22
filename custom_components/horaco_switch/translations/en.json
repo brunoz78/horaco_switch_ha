@@ -84,6 +84,12 @@
       "rx_packets": {
         "name": "Port {port} RX Packets"
       },
+      "tx_errors": {
+        "name": "Port {port} TX Errors"
+      },
+      "rx_errors": {
+        "name": "Port {port} RX Errors"
+      },
       "flow_control": {
         "name": "Port {port} Flow Control",
         "state": {
