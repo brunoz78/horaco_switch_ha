@@ -1,16 +1,16 @@
 # HORACO Managed Switch
 
-Native Home Assistant integration for HORACO HC-SWTGW218AS, HC-SWTGW215AS,
-keepLink KP9000 and compatible OEM managed switches.
+Native Home-Assistant-Integration für HORACO HC-SWTGW218AS, HC-SWTGW215AS,
+keepLink KP9000 / KP-9000-9XHML-X und kompatible OEM-Managed-Switches.
 
-**No extra app or service needed** — talks directly to the switch CGI interface.
+**Keine zusätzliche App und kein Zwischendienst nötig** — die Integration spricht direkt mit der CGI-Schnittstelle des Switches.
 
-### What you get
+### Was du bekommst
 
-- Per-port child devices with link status, speed, duplex and TX/RX counters
-- Remote reboot button
-- Fully local, no cloud
+- Eigenes Gerät pro Port mit Link-Status, Geschwindigkeit, Duplex und TX/RX-Zählern
+- Taste für den Neustart des Switches
+- Vollständig lokal, keine Cloud
 
-### Setup
+### Einrichtung
 
-Enter your switch IP, port (default 80) and credentials (default: admin / admin).
+IP-Adresse des Switches, Port (Standard 80) und Zugangsdaten (Standard: admin / admin) eingeben.
