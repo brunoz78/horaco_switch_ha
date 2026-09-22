@@ -15,8 +15,8 @@ Die Integration meldet sich an der Weboberfläche des Switches an und liest Ger�
 
 | Modell | Ports | SFP+ | Status |
 |--------|-------|------|--------|
-| keepLink KP-9000-9XHML-X (FW V100.9.9.1.7) | 8 × 2.5GbE | 1 × 10G | ✅ Mit dieser Version getestet |
-| HORACO ZX-SWTGW215AS (FW V1.9) | 5 × 2.5GbE | 1 × 10G | ✅ Mit dieser Version getestet |
+| keepLink KP-9000-9XHML-X (HW V3.1, FW V100.9.9.1.7) | 8 × 2.5GbE | 1 × 10G | ✅ Mit dieser Version getestet |
+| HORACO ZX-SWTGW215AS (HW V1.1, FW V1.9) | 5 × 2.5GbE | 1 × 10G | ✅ Mit dieser Version getestet |
 | keepLink KP9000-9XH-X | 8 × GbE | 1 × 10G | ☑️ Laut Originalprojekt bestätigt |
 | HORACO HC-SWTGW218AS | 8 × GbE | 2 × 10G | ☑️ Laut Originalprojekt bestätigt |
 | HORACO HC-SWTGW215AS | 5 × GbE | — | ☑️ Laut Originalprojekt bestätigt |
@@ -145,6 +145,8 @@ Bei jeder Abfrage (alle N Sekunden):
 4. `GET /port.cgi` → Port aktiviert/deaktiviert; steht auf `/info.cgi` keine Porttabelle (z. B. KP-9000-9XHML-X, ZX-SWTGW215AS), kommen Link, Geschwindigkeit/Duplex und Flusskontrolle von hier
 
 Die **Neustart**-Taste sendet `POST /reboot.cgi` mit `cmd=reboot`.
+
+Jede Anfrage schickt den HTTP-Header `Referer` mit. Neuere Firmware (z. B. V100.9.9.1.7 auf Hardware V3.1) liefert ohne diesen Header eine leere Seite — deshalb bleibt eine direkt in die Adresszeile eingegebene URL wie `http://<ip>/info.cgi` dort weiss. Ältere Firmware (z. B. V1.9 auf Hardware V1.1) prüft das nicht.
 
 Zwischen den einzelnen Anfragen liegt eine Pause von 0,4 s, damit der Mikrocontroller des Switches nicht überlastet wird.
 

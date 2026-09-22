@@ -137,6 +137,8 @@ class HoracoScraper:
         try:
             async with self._session.get(
                 f"{self._base_url}{path}",
+                # Required: newer firmware (e.g. V100.9.9.x on HW V3.x) returns an
+                # empty page without a Referer; older firmware (V1.9) ignores it.
                 headers={"Referer": f"{self._base_url}/"},
                 cookies=self._cookies,
                 timeout=aiohttp.ClientTimeout(total=20),
