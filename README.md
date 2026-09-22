@@ -1,6 +1,7 @@
 # HORACO Managed Switch — Home-Assistant-Integration
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+[![GitHub Release](https://img.shields.io/github/v/release/brunoz78/horaco_switch_ha)](https://github.com/brunoz78/horaco_switch_ha/releases)
 [![Validate](https://github.com/brunoz78/horaco_switch_ha/actions/workflows/validate.yml/badge.svg)](https://github.com/brunoz78/horaco_switch_ha/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![HA Version](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue)](https://www.home-assistant.io/)
@@ -46,8 +47,8 @@ Die Integration meldet sich an der Weboberfläche des Switches an und liest Ger�
 
 ### Manuell
 
-1. Auf der Repository-Seite **Code → Download ZIP** wählen
-2. Aus dem ZIP den Ordner `custom_components/horaco_switch/` nach `<config>/custom_components/` kopieren
+1. Die Datei `horaco_switch.zip` des neuesten [Releases](https://github.com/brunoz78/horaco_switch_ha/releases/latest) herunterladen
+2. Entpacken und den Ordner `horaco_switch/` nach `<config>/custom_components/` kopieren
 3. Home Assistant neu starten und die Integration über die Oberfläche hinzufügen
 
 ---
