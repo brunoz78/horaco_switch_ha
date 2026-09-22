@@ -17,6 +17,7 @@ Control and monitor your **HORACO**, **keepLink** and compatible OEM managed swi
 | HORACO HC-SWTGW218AS | 8 × GbE | 2 × 10G | ✅ Confirmed |
 | HORACO HC-SWTGW215AS | 5 × GbE | — | ✅ Confirmed |
 | keepLink KP9000-9XH-X | 8 × GbE | 1 × 10G | ✅ Confirmed |
+| keepLink KP-9000-9XHML-X (FW V100.9.9.1.7) | 8 × 2.5GbE | 1 × 10G | ✅ Confirmed |
 | OEM Realtek RTL8373-based switches | varies | — | ✅ Likely |
 
 > If your switch has a browser-accessible web UI on port 80 with user/password login, it will very likely work. Open an issue to get it added to the table.
@@ -69,7 +70,7 @@ After setup click **Configure** on the integration card to adjust the polling in
 
 | Entity | Type | Description |
 |--------|------|-------------|
-| Uptime | Sensor | e.g. `3d 14h 22m` |
+| Uptime | Sensor | e.g. `3d 14h 22m` — only if the firmware reports it |
 | Firmware | Sensor | Firmware version string |
 | MAC Address | Sensor | Switch hardware MAC |
 | Ports Up | Sensor | Count of active ports |
@@ -81,10 +82,10 @@ After setup click **Configure** on the integration card to adjust the polling in
 | Entity | Type | Description |
 |--------|------|-------------|
 | Link | Binary Sensor | `ON` = up · `OFF` = down/disabled. Carries all port attrs. |
-| Speed | Sensor | `100M` · `1000M` · `10G` · `Disabled` |
+| Speed | Sensor | `100M` · `1000M` · `2500M` · `10G` · `Disabled` |
 | Duplex | Sensor | `Full` or `Half` |
-| TX | Sensor | Total bytes transmitted (cumulative) |
-| RX | Sensor | Total bytes received (cumulative) |
+| TX | Sensor | Total bytes transmitted (cumulative) — only if the switch reports byte counters |
+| RX | Sensor | Total bytes received (cumulative) — only if the switch reports byte counters |
 | TX Packets | Sensor | Total packets transmitted |
 | RX Packets | Sensor | Total packets received |
 | Flow Control | Sensor | `Enabled` or `Disabled` |
@@ -132,7 +133,7 @@ action:
 1. **Auth** — `MD5(username + password)` → `POST /login.cgi`, cookie jar
 2. **Poll** (every N seconds):
    - `GET /info.cgi` → model, firmware, MAC, uptime, port link/speed
-   - `GET /port.cgi` → admin state per port
+   - `GET /port.cgi` → admin state per port (on the KP-9000 layout also link, speed/duplex and flow control)
    - `GET /port.cgi?page=stats` → TX/RX counters
 3. **Reboot** — `POST /reboot.cgi {"cmd":"reboot"}`
 

@@ -186,14 +186,23 @@ async def async_setup_entry(
     coordinator: HoracoCoordinator = hass.data[DOMAIN][entry.entry_id]
     entities: list[SensorEntity] = []
 
-    # Switch-level sensors
+    data = coordinator.data
+
+    # Switch-level sensors (skip uptime on firmware that doesn't report it)
     for desc in SWITCH_SENSORS:
+        if desc.key == "uptime" and data and not data.uptime:
+            continue
         entities.append(SwitchLevelSensor(coordinator, desc))
 
     # Port-level sensors (one child device per port)
-    if coordinator.data:
-        for port in coordinator.data.ports:
+    if data:
+        for port in data.ports:
             for desc in PORT_SENSORS:
+                # Byte counters only where the switch actually reports them
+                if desc.key == "tx_bytes" and port.tx_bytes is None:
+                    continue
+                if desc.key == "rx_bytes" and port.rx_bytes is None:
+                    continue
                 entities.append(PortLevelSensor(coordinator, port.port, desc))
 
     async_add_entities(entities)

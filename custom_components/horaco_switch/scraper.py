@@ -52,8 +52,8 @@ class PortData:
     speed: str                # "100M" | "1000M" | "10G" | "Disabled" | ""
     duplex: str               # "Full" | "Half" | ""
     flow_control: str         # "Enabled" | "Disabled" | ""
-    tx_bytes: int = 0
-    rx_bytes: int = 0
+    tx_bytes: int | None = None   # None = switch reports no byte counters
+    rx_bytes: int | None = None
     tx_packets: int = 0
     rx_packets: int = 0
     tx_errors: int = 0        # derived / future-use
@@ -210,6 +210,33 @@ class HoracoScraper:
             return " ".join(parts) if parts else raw
         return raw
 
+    @staticmethod
+    def _parse_speed_duplex(raw: str) -> tuple[str, str]:
+        """Split "1000Full" / "2500Full" / "10GFull" / "100M/Half" into ("1000M", "Full")."""
+        m = re.match(r"(\d+)\s*([MG])?\s*/?\s*(Full|Half)", raw, re.IGNORECASE)
+        if not m:
+            return "", ""
+        mbit = int(m.group(1)) * (1000 if (m.group(2) or "").upper() == "G" else 1)
+        speed = f"{mbit // 1000}G" if mbit >= 10000 and mbit % 1000 == 0 else f"{mbit}M"
+        return speed, m.group(3).capitalize()
+
+    @staticmethod
+    def _find_port_status_table(soup: BeautifulSoup) -> Any:
+        """Return the read-only per-port table of /port.cgi (not the <select> forms)."""
+        port_list_h3 = soup.find(
+            lambda tag: tag.name == "h3" and "Port List" in tag.text
+        )
+        if port_list_h3:
+            return port_list_h3.find_next("table")
+        for t in soup.find_all("table"):
+            hdrs = [th.get_text(strip=True).lower() for th in t.find_all("th")]
+            if "port" in hdrs and "state" in hdrs:
+                first_row = t.find("tr")
+                nxt = first_row.find_next_sibling("tr") if first_row else None
+                if nxt and not nxt.find("select"):
+                    return t
+        return None
+
     # ------------------------------------------------------------------
     # Main scrape
     # ------------------------------------------------------------------
@@ -226,36 +253,41 @@ class HoracoScraper:
         stats_html     = await self._fetch(CGI_PORT_STATS)
         port_cfg_html  = await self._fetch(CGI_PORT_CFG)
 
+        return self.parse(info_html, port_cfg_html, stats_html)
+
+    def parse(
+        self,
+        info_html: str | None,
+        port_cfg_html: str | None,
+        stats_html: str | None,
+    ) -> SwitchData:
+        """Turn the raw CGI pages into a SwitchData snapshot.
+
+        Two page layouts are supported:
+          • HORACO: port link/speed table on /info.cgi (second table)
+          • keepLink KP-9000 & co.: /info.cgi has device info only; link/speed
+            come from the "Actual" columns of the status table on /port.cgi
+        """
         device_info: dict[str, str] = {}
         port_admin_states: dict[str, str] = {}  # port_num → "enable"/"disable"
+        port_status_rows: list[list[str]] = []   # /port.cgi status rows (KP-9000 layout)
         ports: list[PortData] = []
 
         # ── 1. Admin state per port from /port.cgi ─────────────────────
         if port_cfg_html:
             try:
                 soup = BeautifulSoup(port_cfg_html, "html.parser")
-                port_list_h3 = soup.find(
-                    lambda tag: tag.name == "h3" and "Port List" in tag.text
-                )
-                port_table = port_list_h3.find_next("table") if port_list_h3 else None
-                if not port_table:
-                    for t in soup.find_all("table"):
-                        hdrs = [th.get_text(strip=True).lower() for th in t.find_all("th")]
-                        if "port" in hdrs and "state" in hdrs:
-                            first_data = t.find("tr")
-                            nxt = first_data.find_next_sibling("tr") if first_data else None
-                            if nxt and not nxt.find("select"):
-                                port_table = t
-                                break
+                port_table = self._find_port_status_table(soup)
                 if port_table:
                     for row in port_table.find_all("tr"):
-                        cells = row.find_all("td")
+                        cells = [c.get_text(strip=True) for c in row.find_all("td")]
                         if len(cells) >= 2:
-                            pname = cells[0].get_text(strip=True)
-                            state = cells[1].get_text(strip=True).lower()
-                            m = re.search(r"\d+", pname)
+                            m = re.search(r"\d+", cells[0])
                             if m:
-                                port_admin_states[m.group(0)] = state
+                                port_admin_states[m.group(0)] = cells[1].lower()
+                                # Port | State | Speed Config | Speed Actual | Flow Config | Flow Actual
+                                if len(cells) >= 6:
+                                    port_status_rows.append([m.group(0), *cells[1:]])
             except Exception as exc:
                 _LOGGER.warning("[%s] Could not parse port admin states: %s", self.ip, exc)
 
@@ -303,6 +335,29 @@ class HoracoScraper:
                             flow_control=cells[4].get_text(strip=True) if len(cells) > 4 else "",
                         ))
 
+        # ── 2b. No port table on /info.cgi → use /port.cgi status rows ──
+        if not ports:
+            for port_num, state, _cfg, actual, _flow_cfg, flow_actual, *_ in port_status_rows:
+                if state.lower() in ("disable", "disabled"):
+                    ports.append(PortData(
+                        port=port_num, status=PORT_STATUS_DISABLED,
+                        link="Disabled", speed="Disabled",
+                        duplex="", flow_control="",
+                    ))
+                    continue
+                speed, duplex = self._parse_speed_duplex(actual)
+                up = bool(speed)
+                ports.append(PortData(
+                    port=port_num,
+                    status=PORT_STATUS_UP if up else PORT_STATUS_DOWN,
+                    link="Link Up" if up else "Link Down",
+                    speed=speed,
+                    duplex=duplex,
+                    flow_control={"on": "Enabled", "off": "Disabled"}.get(
+                        flow_actual.lower(), flow_actual
+                    ),
+                ))
+
         # ── 3. TX/RX counters from /port.cgi?page=stats ────────────────
         if stats_html and ports:
             soup = BeautifulSoup(stats_html, "html.parser")
@@ -336,14 +391,10 @@ class HoracoScraper:
                             if p.port == port_num and len(cells) > max(tx_pkt_i, rx_pkt_i):
                                 p.tx_packets = self._parse_counter(cells[tx_pkt_i].get_text(strip=True))
                                 p.rx_packets = self._parse_counter(cells[rx_pkt_i].get_text(strip=True))
-                                p.tx_bytes = (
-                                    self._parse_counter(cells[tx_b_i].get_text(strip=True))
-                                    if tx_b_i != -1 and len(cells) > tx_b_i else p.tx_packets * 800
-                                )
-                                p.rx_bytes = (
-                                    self._parse_counter(cells[rx_b_i].get_text(strip=True))
-                                    if rx_b_i != -1 and len(cells) > rx_b_i else p.rx_packets * 800
-                                )
+                                if tx_b_i != -1 and len(cells) > tx_b_i:
+                                    p.tx_bytes = self._parse_counter(cells[tx_b_i].get_text(strip=True))
+                                if rx_b_i != -1 and len(cells) > rx_b_i:
+                                    p.rx_bytes = self._parse_counter(cells[rx_b_i].get_text(strip=True))
                                 break
 
         return SwitchData(
